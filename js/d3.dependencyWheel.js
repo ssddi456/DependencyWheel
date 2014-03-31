@@ -32,10 +32,11 @@ d3.chart = d3.chart || {};
  * @see https://github.com/fzaninotto/DependencyWheel for complete source and license
  */
 d3.chart.dependencyWheel = function(options) {
+  options = options || {};
 
-  var width = 700;
-  var margin = 150;
-  var padding = 0.02;
+  var width   = 700  || options.width  ;
+  var margin  = 150  || options.margin ;
+  var padding = 0.02 || options.padding;
 
   function chart(selection) {
     selection.each(function(data) {
@@ -72,6 +73,7 @@ d3.chart.dependencyWheel = function(options) {
       // Returns an event handler for fading a given chord group.
       var fade = function(opacity) {
         return function(g, i) {
+          i = g.source ? g.source.index : i;
           svg.selectAll(".chord")
               .filter(function(d) {
                 return d.source.index != i && d.target.index != i;
@@ -104,23 +106,39 @@ d3.chart.dependencyWheel = function(options) {
 
       chord.matrix(matrix);
 
+      var fadeOut = fade(0.1);
+      var fadeIn  = fade(1);
+
+      function filterTrue(v){
+        return v;
+      }
+      var getChosenNode = options.onNodeChosed ? function( n, idx ){
+        idx = n.source ? n.source.index : idx;
+        var nodeName = packageNames[idx];
+        options.onNodeChosed( 
+          nodeName, // self
+          matrix[idx]
+            .map(function( v, idx ){
+              if ( v ){
+                return packageNames[idx];
+              }
+            }).filter(filterTrue),// deps
+          matrix
+            .map(function( arr, i ){
+              return arr[idx] != 0 && packageNames[i];
+            }).filter(filterTrue))// requires
+      } : undefined;
+
       var rootGroup = chord.groups()[0];
       var rotation = - (rootGroup.endAngle - rootGroup.startAngle) / 2 * (180 / Math.PI);
 
       var g = gEnter.selectAll("g.group")
         .data(chord.groups)
-      .enter().append("svg:g")
+        .enter().append("svg:g")
         .attr("class", "group")
         .attr("transform", function(d) {
           return "rotate(" + rotation + ")";
         });
-
-      g.append("svg:path")
-        .style("fill", fill)
-        .style("stroke", fill)
-        .attr("d", arc)
-        .on("mouseover", fade(0.1))
-        .on("mouseout", fade(1));
 
       g.append("svg:text")
         .each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2; })
@@ -133,6 +151,15 @@ d3.chart.dependencyWheel = function(options) {
         })
         .text(function(d) { return packageNames[d.index]; });
 
+      g.append("svg:path")
+        .style("fill", fill)
+        .style("stroke", fill)
+        .attr("d", arc);
+
+      g .on("mouseover", fadeOut)
+        .on("mouseout",  fadeIn)
+        .on("click",     getChosenNode);
+
       gEnter.selectAll("path.chord")
           .data(chord.chords)
         .enter().append("svg:path")
@@ -143,7 +170,10 @@ d3.chart.dependencyWheel = function(options) {
           .attr("transform", function(d) {
             return "rotate(" + rotation + ")";
           })
-          .style("opacity", 1);
+          .style("opacity", 1)
+          .on('mouseover', fadeOut)
+          .on('mouseout',  fadeIn)
+          .on('click',     getChosenNode);
     });
   }
 
