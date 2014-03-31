@@ -34,9 +34,9 @@ d3.chart = d3.chart || {};
 d3.chart.dependencyWheel = function(options) {
   options = options || {};
 
-  var width   = 700  || options.width  ;
-  var margin  = 150  || options.margin ;
-  var padding = 0.02 || options.padding;
+  var width   = options.width   || 700 ;
+  var margin  = options.margin  || 150 ;
+  var padding = options.padding || 0.02;
 
   function chart(selection) {
     selection.each(function(data) {
