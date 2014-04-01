@@ -43,6 +43,13 @@ d3.chart.dependencyWheel = function(options) {
 
       var matrix = data.matrix;
       var packageNames = data.packageNames;
+      var packages     = data.packages;
+      if( packages ){
+        packageNames  = packages.map(function( pkg ) {
+                          return pkg.name;
+                        });
+      }
+
       var radius = width / 2 - margin;
 
       // create the layout
@@ -114,18 +121,20 @@ d3.chart.dependencyWheel = function(options) {
       }
       var getChosenNode = options.onNodeChosed ? function( n, idx ){
         idx = n.source ? n.source.index : idx;
-        var nodeName = packageNames[idx];
+        var node = packages ? packages[idx] : packageNames[idx];
         options.onNodeChosed( 
-          nodeName, // self
+          node, // self
           matrix[idx]
             .map(function( v, idx ){
               if ( v ){
-                return packageNames[idx];
+                return packages ? packages[idx] : packageNames[idx];
               }
             }).filter(filterTrue),// deps
           matrix
             .map(function( arr, i ){
-              return arr[idx] != 0 && packageNames[i];
+              return arr[idx] != 0 && (packages ?
+                                        packages[idx] :
+                                        packageNames[i]);
             }).filter(filterTrue))// requires
       } : undefined;
 
