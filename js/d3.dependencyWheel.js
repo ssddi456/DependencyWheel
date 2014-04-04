@@ -81,33 +81,33 @@ d3.chart.dependencyWheel = function(options) {
       var fade = function(opacity) {
         return function(g, i) {
           i = g.source ? g.source.index : i;
-          svg.selectAll(".chord")
+          chords
               .filter(function(d) {
                 return d.source.index != i && d.target.index != i;
               })
             .transition()
               .style("opacity", opacity);
           var groups = [];
-          svg.selectAll(".chord")
-              .filter(function(d) {
-                if (d.source.index == i) {
-                  groups.push(d.target.index);
-                }
-                if (d.target.index == i) {
-                  groups.push(d.source.index);
-                }
-              });
+          chords
+            .each(function(d) {
+              if (d.source.index == i) {
+                groups.push(d.target.index);
+              }
+              if (d.target.index == i) {
+                groups.push(d.source.index);
+              }
+            });
           groups.push(i);
           var length = groups.length;
-          svg.selectAll('.group')
-              .filter(function(d) {
-                for (var i = 0; i < length; i++) {
-                  if(groups[i] == d.index) return false;
-                }
-                return true;
-              })
-              .transition()
-                .style("opacity", opacity);
+          node_label
+            .filter(function(d) {
+              for (var i = 0; i < length; i++) {
+                if(groups[i] == d.index) return false;
+              }
+              return true;
+            })
+            .transition()
+              .style("opacity", opacity);
         };
       };
 
@@ -141,7 +141,7 @@ d3.chart.dependencyWheel = function(options) {
       var rootGroup = chord.groups()[0];
       var rotation = - (rootGroup.endAngle - rootGroup.startAngle) / 2 * (180 / Math.PI);
 
-      var g = gEnter.selectAll("g.group")
+      var node_label = gEnter.selectAll("g.group")
         .data(chord.groups)
         .enter().append("svg:g")
         .attr("class", "group")
@@ -149,7 +149,7 @@ d3.chart.dependencyWheel = function(options) {
           return "rotate(" + rotation + ")";
         });
 
-      g.append("svg:text")
+      node_label.append("svg:text")
         .each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2; })
         .attr("dy", ".35em")
         .attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
@@ -160,29 +160,30 @@ d3.chart.dependencyWheel = function(options) {
         })
         .text(function(d) { return packageNames[d.index]; });
 
-      g.append("svg:path")
+      node_label.append("svg:path")
         .style("fill", fill)
         .style("stroke", fill)
         .attr("d", arc);
 
-      g .on("mouseover", fadeOut)
+      node_label 
+        .on("mouseover", fadeOut)
         .on("mouseout",  fadeIn)
         .on("click",     getChosenNode);
 
-      gEnter.selectAll("path.chord")
-          .data(chord.chords)
-        .enter().append("svg:path")
-          .attr("class", "chord")
-          .style("stroke", function(d) { return d3.rgb(fill(d.source)).darker(); })
-          .style("fill", function(d) { return fill(d.source); })
-          .attr("d", d3.svg.chord().radius(radius))
-          .attr("transform", function(d) {
-            return "rotate(" + rotation + ")";
-          })
-          .style("opacity", 1)
-          .on('mouseover', fadeOut)
-          .on('mouseout',  fadeIn)
-          .on('click',     getChosenNode);
+      var chords = gEnter.selectAll("path.chord")
+                      .data(chord.chords)
+                    .enter().append("svg:path")
+                      .attr("class", "chord")
+                      .style("stroke", function(d) { return d3.rgb(fill(d.source)).darker(); })
+                      .style("fill", function(d) { return fill(d.source); })
+                      .attr("d", d3.svg.chord().radius(radius))
+                      .attr("transform", function(d) {
+                        return "rotate(" + rotation + ")";
+                      })
+                      .style("opacity", 1)
+                      .on('mouseover', fadeOut)
+                      .on('mouseout',  fadeIn)
+                      .on('click',     getChosenNode);
     });
   }
 
